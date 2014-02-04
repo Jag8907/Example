@@ -1,0 +1,358 @@
+class Node(object):
+    
+    '''Represents a node in a binary search tree and has an associated value'''
+    
+    def __init__(self, value):
+        if type(value) != int or value < 0:
+            raise Exception("Only positive integer inputs are allowed.")
+        self.value = value
+        
+    def __str__(self):
+        return str(self.value)
+
+    def __repr__(self):
+        return str(self)
+
+class Edge(object):
+    
+    '''A border between a child and parent node'''
+    
+    def __init__(self, parent, child):
+        self.parent = parent
+        self.child = child
+        
+    def __str__(self):
+        return str(self.parent) + '->' + str(self.child)
+
+    def __repr__(self):
+        return str(self)
+
+class Digraph(object):
+    
+    '''The graph stores a list of all nodes and a dictionary of
+    the parent-child pair for all edges.  It also has functions
+    to check for a nodes presence, add nodes and add edges.
+    It's string representation shows all of its edges'''
+    
+    def __init__(self):
+        self.nodes = []
+        self.edges = {}
+        
+    def addNode(self, node):
+        '''Adds a node to the list of nodes, but first checks
+        if a node in alread present.  Adds the node to the edges
+        dictionary as a key with a blank list for its value pair'''
+        if node in self.nodes:
+            raise ValueError("Duplicate Node")
+        else:
+            self.nodes.append(node)
+            self.edges[node] = []
+            
+    def addMultipleNodes(self, *nodes):
+        for node in nodes:
+            self.addNode(node)
+            
+    def addEdge(self, edge):
+        '''Adds child node as value pair to parent node in
+        edges dictionary.  Checks to make sure both nodes
+        are present in nodes list'''
+        parent = edge.parent
+        child = edge.child
+        if (parent not in self.nodes or child not in self.nodes):
+            raise ValueError('Node not in graph')
+        self.edges[parent].append(child)
+        
+    def addMultipleEdges(self, *edges):
+        for edge in edges:
+            self.addEdge(edge)
+            
+    def childrenOf(self, node):
+        '''Returns a list of children nodes from parent node'''
+        return self.edges[node]
+    
+    def hasNode(self, node):
+        '''Checks if node is in graphs nodes list'''
+        return node in self.nodes
+
+    def __str__(self):
+        if len(self.nodes) <= 1:
+            try:
+                return str(self.nodes[0])
+            except IndexError:
+                return 'No nodes in graph'
+        paths = ''
+        for parent in self.edges:
+            for child in self.edges[parent]:
+                paths = paths + str(parent) + '->' + str(child) + '\n'
+        return paths[:-1]
+
+def printPath(path):
+
+    '''Function for printing a path of nodes'''
+    
+    stringPath = '['
+    for node in path:
+        stringPath = stringPath + str(node.value) + ', '
+    stringPath = stringPath[:-2] + ']'
+    return stringPath
+
+def arrayToBinarySearchTree(array):
+
+    '''This function converts a list(array) into a binary search tree
+    that allows at most only 1 parent node to have only 1 child node'''
+    
+    graph = Digraph()
+    array.sort()
+
+    def addBinarySearch(graph, array, parent = None):
+
+        '''This subfunction is here to allow recursion with the graph
+        created in the outer function'''
+
+        # Base cases
+        '''If the recursion has been called at least once there will
+        be a parent node and an edge will be created from the parent
+        to the final remaining node(child)'''
+        
+        if len(array) == 1 and parent == None:
+            child = Node(array[0])
+            graph.addNode(child)
+            return
+        elif len(array) == 1:
+            child = Node(array[0])
+            graph.addNode(child)
+            edge = Edge(parent, child)
+            graph.addEdge(edge)
+            return
+        elif len(array) == 0:
+            return
+        
+        halfLength = len(array)/2
+        alternate = False
+        
+        '''If alternate's value is changed to true then
+        the binary search tree will be uneven.  It's
+        purpose is to split the graph in a way that
+        minimizes the number of parent nodes with only
+        1 child'''
+
+        '''Adds child node to the list of nodes'''
+        if len(array)%2 != 0 and ((len(array)-1)/2)%2 == 0:
+            child = Node(array[halfLength-1])
+            graph.addNode(child)
+            alternate = True
+        else:
+            child = Node(array[halfLength])
+            graph.addNode(child)
+            
+        slots = 2
+        '''Maximum number of children allowed per parent node'''
+        
+        if parent != None:
+            '''Inputs a new edge from parent to child node'''
+            edge = Edge(parent, child)
+            graph.addEdge(edge)
+            
+        while slots > 0:
+            '''This is the left side of the graph, even though there
+            are no markers it will be the first in the child list
+            of the current child node'''
+            if slots == 2:
+                if alternate:
+                    addBinarySearch(graph, array[:halfLength-1], child)
+                else:
+                    addBinarySearch(graph, array[:halfLength], child)
+            else:
+                if alternate:
+                    addBinarySearch(graph, array[halfLength:], child)
+                else:
+                    addBinarySearch(graph, array[halfLength+1:], child)
+            slots -= 1
+        return
+
+    addBinarySearch(graph, array)        
+    return graph
+
+def summation(graph, value, end = None, route = 'placeholder'):
+    
+    '''This function finds all paths that go down the graph from parent
+    child nodes and sum up to a given value.  Also returns singular nodes
+    that equal the given value.  Assumes there are no negative values'''
+
+    def routeValue(route):
+        '''Returns the total value of a route'''
+        total = 0
+        for node in route:
+            total += node.value
+        return total
+
+    if route == 'placeholder':
+        route = []
+    paths = []
+    '''A list of all routes that equal the given value'''
+    if len(graph.nodes) == 0:
+        return paths
+    if end == None:
+        end = graph.nodes[0]
+    route.append(end)
+    '''The route of nodes that leads to the current end node'''
+    num = 0
+    length = len(route)
+    while num != length:
+        '''Measures every subpath value in route that ends in the end node.
+        If the value is equal to given value then the subpath is added to
+        the paths list'''
+        pathValue = routeValue(route[length-1-num:])
+        '''Start by measuring the end node value only then add more members
+        of the route starting with the node directly previous'''
+        if pathValue > value:
+            '''If a subpath is greater than given value then all subpaths measured
+            after it with the same end node will be as well.'''
+            break
+        elif pathValue == value:
+            paths.append(route[length-1-num:])
+            break
+        num += 1
+    for node in graph.childrenOf(end):
+        '''For every child node of the end node do the same thing.
+        This will recursively cover every path in the graph.  Passes
+        the current route which the child will be appended onto.
+        Also combines the child's and adult's paths list.'''
+        paths.extend(summation(graph, value, node, route[:]))
+    return paths
+
+def summationImproved(graph, value, parent = None, route = 'placeholder',\
+                      paths = 'placeholder'):
+    
+    '''This function finds all paths that loop across a parent node and
+    add up to the given value. Assumes no negative values'''
+
+    if route == 'placeholder':
+        route = []
+    if paths == 'placeholder':
+        paths = []
+    full = {}
+    '''The full dictionary stores all paths descending from the parent node
+    and their values.  The route is the key and the value is its total value'''
+    if len(graph.nodes) == 0:
+        return paths, full
+    leftPaths = {}
+    rightPaths = {}
+    '''Left and right paths from the parent node are stored as dictionaries'''
+    if parent == None:
+        parent = graph.nodes[0]
+    route = route + [parent]
+    '''The current route that leads down to this parent node'''
+
+    # Base case
+    if len(graph.childrenOf(parent)) == 0:
+        full[(parent,)] = parent.value
+        return paths, full
+    '''Nodes at the end of the tree simply return said node paired with its value'''
+    
+    left = True
+    for child in graph.childrenOf(parent):
+        '''This section binds recursively called sections to leftPaths, rightPaths
+        and full.  Full is a dictionary storing paths and their associated values'''
+        if left:
+            paths, leftPaths = summationImproved(graph, value, child, route[:], paths)
+        else:
+            paths, rightPaths = summationImproved(graph, value, child, route[:], paths)
+        left = False
+
+    '''This section below creates a list of full paths that are below the given
+    value.  These paths will be returned to the level higher in the recursive
+    call for use in the leftPaths or rightPaths'''
+    
+    for path in leftPaths:
+        pathValue = leftPaths[path] + parent.value
+        if pathValue < value:
+            '''Checks if the path plus parent are less than given value.
+            If they are the path is added to the full dictioinary'''
+            newPath = (parent,) + path
+            full[newPath] = pathValue
+    for path in rightPaths:
+        '''Does the same thing as leftPaths'''
+        pathValue = rightPaths[path] + parent.value
+        if pathValue < value:
+            newPath = (parent,) + path
+            full[newPath] = pathValue
+    if parent.value < value:
+        full[(parent,)] = parent.value
+
+    '''This sections adds left and right sides together and will
+    add routes to the paths list if they equal the given value'''
+    for firstRoute in leftPaths:
+        for secondRoute in rightPaths:
+            if leftPaths[firstRoute] + rightPaths[secondRoute] + parent.value == value:
+                newPath = firstRoute[::-1] + (parent,) + secondRoute
+                newPath = list(newPath)
+                paths.append(newPath)
+
+    return paths, full
+
+def findPaths(graph, value):
+    summationOriginal = summation(graph,value)
+    improved = summationImproved(graph,value)[0]
+    for path in summationOriginal:
+        print 'Straight Path: ', printPath(path)
+    for path in improved:
+        print 'Loop Path: ', printPath(path)
+
+def Test1():
+    # This should not print an empty list and findPaths should print nothing
+    print "Test 1"
+    emptyArray = []
+    emptyCreateGraph = arrayToBinarySearchTree(emptyArray)
+    print emptyCreateGraph
+    findPaths(emptyCreateGraph,0)
+    print "\n"
+
+def Test2():
+    # This should create a binary tree with 2 in the middle and 1, 3 as children
+    print "Test 2"
+    normalArray = [1,2,3]
+    normalCreateGraph = arrayToBinarySearchTree(normalArray)
+    print normalCreateGraph
+    print "\n"
+
+def Test3():
+    # This a list with a single element and a single path
+    print "Test 3"
+    oneNodeGraph = Digraph()
+    one = Node(1)
+    oneNodeGraph.addNode(one)
+    print oneNodeGraph
+    findPaths(oneNodeGraph,1)
+    print "\n"
+    
+def Test4():
+    # Should return a single loop path
+    print "Test 4"
+    normalGraph = Digraph()
+    first = Node(1)
+    second = Node(2)
+    third = Node(3)
+    edgeL = Edge(first,second)
+    edgeR = Edge(first,third)
+    normalGraph.addNode(first)
+    normalGraph.addNode(second)
+    normalGraph.addNode(third)
+    normalGraph.addEdge(edgeL)
+    normalGraph.addEdge(edgeR)
+    print normalGraph
+    findPaths(normalGraph,6)
+    print "\n"
+
+Test1()
+Test2()
+Test3()
+Test4()
+
+# Example of use
+print "Example of more typical use:\n"
+array = range(1,31)
+graph = arrayToBinarySearchTree(array)
+print graph
+print "\n"
+findPaths(graph, 30)
