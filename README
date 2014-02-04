@@ -1,0 +1,3 @@
+I've been recently studying programming; Python, Ruby, HTML and CSS. I plan to begin applying for jobs and wanted to create some example code. This code is for a problem in "Cracking the Coding Interview" by Gayle Laakmann McDowell and I thought it would show my understanding of Python.
+
+"You are given a binary tree in which each node contains a value. Design an algorithm to print all paths which sum to a given value. A path can start or end anywhere in the tree."
