@@ -40,7 +40,7 @@ class Digraph(object):
         
     def addNode(self, node):
         '''Adds a node to the list of nodes, but first checks
-        if a node in alread present.  Adds the node to the edges
+        if a node in already present.  Adds the node to the edges
         dictionary as a key with a blank list for its value pair'''
         if node in self.nodes:
             raise ValueError("Duplicate Node")
